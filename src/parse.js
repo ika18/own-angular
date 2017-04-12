@@ -212,6 +212,8 @@ AST.prototype.primary = function () {
         return this.object();
     } else if (this.constants.hasOwnProperty(this.tokens[0].text)) {
         return this.constants[this.consume().text];
+    } else if (this.peek().identifier) {
+        return this.identifier();
     } else {
         return this.constant();
     }
@@ -308,7 +310,7 @@ ASTCompiler.prototype.compile = function (text) {
     this.recurse(ast);
 
     /* jshint -W054 */
-    return new Function(this.state.body.join(''));
+    return new Function('s', this.state.body.join(''));
     /* jshint +W054 */
 
 };
@@ -334,6 +336,8 @@ ASTCompiler.prototype.recurse = function (ast) {
                 return key + ':' + value;
             });
             return '{' + properties.join(',') + '}';
+        case AST.Identifier:
+            return this.nonComputedMember('s', ast.name);
     }
 };
 
@@ -351,6 +355,10 @@ ASTCompiler.prototype.stringEscapeRegex = /[^ a-zA-Z0-9]/g;
 
 ASTCompiler.prototype.stringEscapeFn = function (c) {
     return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4);
+};
+
+ASTCompiler.prototype.nonComputedMember = function (left, right) {
+    return '(' + left + ').' + right;
 };
 
 function Parser(lexer) {
